@@ -11,64 +11,66 @@ var convert = require('xml-js');
 //    console.log(res.lang);
 //});
 
-//fs.readFile('GeoMehanika_ru.ts', (err, data) => {
-//    if (err) throw err;
-//    console.log(data)
-//});
-
 
 var xml = require('fs').readFileSync('GeoMehanika_ru.ts', 'utf8');
 //var options = { compact: true, ignoreComment: true, spaces: 4 };
 var tsJsObj = convert.xml2js(xml);
 console.log(tsJsObj);
 
-transObj(tsJsObj);
-show(tsJsObj);
-let xmlNew = convert.js2xml(tsJsObj);
-
-fs.writeFileSync('GeoNew_ru.ts', xmlNew);
+// let transObj = new Promise((res,rej)=> {
+//   await transObj(tsJsObj);
+//   res(tsJsObj);
+// });
+//show(tsJsObj);
+transObj(tsJsObj, (transObj)=>{
+  let xmlNew = convert.js2xml(tsJsObj);
+  fs.writeFileSync('GeoNew_ru.ts', xmlNew);
+});
 
 async function rusTranslate(sentence) {
   console.log(sentence);
   let result = await (new Promise((res,rej)=>{
-    setTimeout(2000, ()=> {
-      console.log('timeout 2 second')
-      resolve('add_translate');
+
+    translate.translate(sentence, { to: 'ru' }, (err, trResult) => {
+      if (err) 
+	res('error translate');
+      else
+      {
+      	res(trResult.text);
+	console.log(trResult.text);
+      }
     });
+    // setTimeout(()=> {
+    //   console.log('timeout 2 second')
+    //   res('add_translate');
+    // }, 2);
   }));
-  return sentence + result;
-  // translate.translate(source_text, { to: 'ru' }, (err, res) => {
-  //   subelem.elements[1].elements.push({ type: 'text', text: res.text });
-  //   resolve(res.text);
-  // });
+  return result;
 }
 
-async function transObj(result)
+async function transObj(result, cb)
 {
     for(let elem of result.elements[1].elements)
     {
-    //console.log(elem);
         for(let subelem of elem.elements)
         {
             if (subelem.name == 'name')
                 console.log(subelem);
             else if (subelem.name == 'message') {
-                //console.log(subelem);
                 let source_text = subelem.elements[0].elements[0].text;
-                //let source_text = subelem.elements[1].elements[0].text;
                 {
-                    console.log(source_text);
+                    //console.log('source' + source_text);
                     subelem.elements[1].elements = [];
 
                     let promise = new Promise((resolve, reject)=>{
-                      resolve(rusTranslate());
+                      resolve(rusTranslate(source_text));
                     });
-                    let result = await promise;
-                    subelem.elements[1].elements.push(result);
-
+                    let translation = await promise;
+                    subelem.elements[1].elements.push({ type: 'text', text: translation });
                 }
             }
         }
+	cb(result);
     }
 }
 
@@ -78,20 +80,12 @@ function show(result)
     {
         for(let subelem of elem.elements)
         {
-    console.log(subelem);
+          console.log(subelem);
             if (subelem.name == 'name')
                 console.log(subelem);
             else if (subelem.name == 'message') {
                 console.log(subelem.elements);
                 console.log(subelem.elements[1]);
-                //let source_text = subelem.elements[0].elements[0].text;
-                ////let source_text = subelem.elements[1].elements[0].text;
-                //{
-                //    console.log(source_text);
-                //    subelem.elements[1].elements = [];
-                //    subelem.elements[1].elements.push({ type: 'text', text: source_text + 'translate' });
-
-                //}
             }
         }
     }
