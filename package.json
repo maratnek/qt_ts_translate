@@ -1,0 +1,21 @@
+{
+  "name": "translate",
+  "version": "1.0.0",
+  "description": "",
+  "main": "node_translate.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "translate",
+    ".ts",
+    "xml",
+    "files"
+  ],
+  "author": "zm",
+  "license": "MIT",
+  "devDependencies": {
+    "xml-js": "^1.6.8",
+    "yandex-translate": "^2.1.1"
+  }
+}
