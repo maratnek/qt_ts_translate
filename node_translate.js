@@ -19,7 +19,7 @@ var xml = require('fs').readFileSync('GeoMehanika_ru.ts', 'utf8');
 //var options = { compact: true, ignoreComment: true, spaces: 4 };
 var result = convert.xml2js(xml);
 console.log(result);
-function transObj(result)
+async function transObj(result)
 {
     for(let elem of result.elements[1].elements)
     {
@@ -35,13 +35,52 @@ function transObj(result)
                 {
                     console.log(source_text);
                     subelem.elements[1].elements = [];
-                    subelem.elements[1].elements.push({ type: 'text', text: source_text + 'translate' });
+
+                    let promise = new Promise((resolve, reject)=>{
+                        translate.translate(source_text, { to: 'ru' }, (err, res) => {
+                            subelem.elements[1].elements.push({ type: 'text', text: res.text });
+                            resolve(res.text);
+                        });
+                    });
+                    let result = await promise;
 
                 }
             }
         }
     }
 }
+
+function show(result)
+{
+    for(let elem of result.elements[1].elements)
+    {
+        for(let subelem of elem.elements)
+        {
+    console.log(subelem);
+            if (subelem.name == 'name')
+                console.log(subelem);
+            else if (subelem.name == 'message') {
+                console.log(subelem.elements);
+                console.log(subelem.elements[1]);
+                //let source_text = subelem.elements[0].elements[0].text;
+                ////let source_text = subelem.elements[1].elements[0].text;
+                //{
+                //    console.log(source_text);
+                //    subelem.elements[1].elements = [];
+                //    subelem.elements[1].elements.push({ type: 'text', text: source_text + 'translate' });
+
+                //}
+            }
+        }
+    }
+}
+
+transObj(result);
+show(result);
+let xmlNew = convert.js2xml(result);
+
+fs.writeFileSync('GeoNew_ru.ts', xmlNew);
+
 //var json = convert.xml2json(xml);
 //console.log(json);
 //var res = convert.xml2js()
