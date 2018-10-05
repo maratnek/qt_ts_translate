@@ -17,26 +17,120 @@ var xml = require('fs').readFileSync('GeoMehanika_ru.ts', 'utf8');
 var tsJsObj = convert.xml2js(xml);
 console.log(tsJsObj);
 
-transObj(tsJsObj, (newObj)=>{
-  let xmlNew = convert.js2xml(newObj);
+///////////////////////////////////////////////////////////////////////
+// All the merge
+function findWord(word, obj)
+{
+    for (let elem of obj)
+    {
+        //console.log(elem);
+        if (elem.sT === word)
+            return elem.translRu;
+    }
+    return false;
+
+}
+
+function MergeTsAndXmlTs()
+{
+    let json = fs.readFileSync('translate.json', 'utf8');
+    let obj = JSON.parse(json);
+    // for by all ts tags
+
+    for(let elem of tsJsObj.elements[1].elements)
+    {
+        for(let subelem of elem.elements)
+        {
+            //console.log(subelem);
+            if (subelem.name == 'message') {
+                let source_text = subelem.elements[0].elements[0].text;
+                {
+                    console.log('source' + source_text);
+                    subelem.elements[1].elements = [];
+                    subelem.elements[1].elements.push(
+                        { 
+                            type: 'text', text: findWord(source_text,obj) 
+                        }
+                    );
+                }
+            }
+        }
+    }
+
+    show(tsJsObj);
+
+  let xmlNew = convert.js2xml(tsJsObj);
   fs.writeFileSync('GeoNew_ru.ts', xmlNew);
-});
 
+}
+
+MergeTsAndXmlTs();
+
+///////////////////////////////////////////////////////////////////////
+
+//transObj(tsJsObj, (newObj)=>{
+//  let xmlNew = convert.js2xml(newObj);
+//  fs.writeFileSync('GeoNew_ru.ts', xmlNew);
+//});
+//show(tsJsObj);
+//let jsonTS = [];
+//let allSentence = getAllSentence(tsJsObj);
+////for (let sentence of allSentence)
+//for (let i = 0; i < allSentence.length; i++)
+//{
+//    console.log(allSentence[i]);
+//    jsonTS.push({id: i, sT: allSentence[i]});
+//}
+
+
+
+//fs.writeFileSync('allSentence.json', JSON.stringify(jsonTS));
 async function rusTranslate(sentence) {
-  console.log(sentence);
-  let result = await (new Promise((res,rej)=>{
-
-    translate.translate(sentence, { to: 'ru' }, (err, trResult) => {
-      if (err) 
-	res('error translate');
-      else
-      {
-      	res(trResult.text);
-	console.log(trResult.text);
-      }
-    });
-  }));
+  let promise = new Promise((resolve,reject)=>{
+      //setTimeout(() => resolve(sentence + 'translate my'), 2000);
+      //resolve(sentence);
+      translate.translate(sentence, { to: 'ru' }, (err, trResult) => {
+          if (err) 
+              resolve('error translate');
+          else
+          {
+              resolve(trResult.text);
+              console.log(trResult.text);
+          }
+      });
+  });
+  let result = await promise;
   return result;
+}
+
+async function WriteFileTs()
+{
+   // await (new Promise((res2, rej2)=>{
+        for (let i = 0; i < jsonTS.length; i++)
+        {
+            console.log(jsonTS[i].sT);
+            jsonTS[i].translRu = await rusTranslate(jsonTS[i].sT);
+            console.log(jsonTS[i]);
+
+            //translate.translate('Hi.Howareyoubro?', { to: 'ru' }, (err, res) => {
+            //    if (err)
+            //        console.log('Error',err);
+            //    else
+            //        console.log(res.text);
+            //});
+        } 
+    //    res2(true);
+    //}));
+    console.log('write file');
+    fs.writeFileSync('translate2.json', JSON.stringify(jsonTS));
+}
+
+try {
+    //WriteFileTs();
+}
+catch(error)
+{
+    fs.writeFileSync('translate2.json', JSON.stringify(jsonTS));
 }
 
 async function transObj(result, cb)
@@ -65,17 +159,39 @@ async function transObj(result, cb)
     }
 }
 
+function getAllSentence(xmlTS)
+{
+    let allSentence = [];
+    for(let elem of xmlTS.elements[1].elements)
+    {
+        for(let subelem of elem.elements)
+        {
+            if (subelem.name == 'name')
+                console.log(subelem);
+            else if (subelem.name == 'message') {
+                //console.log(subelem.elements);
+                //console.log(subelem.elements[0].elements[0].text);
+                //console.log(subelem.elements[1]);
+                let text = subelem.elements[0].elements[0].text;
+                console.log(text);
+                allSentence.push(text);
+            }
+        }
+    }
+    return allSentence;
+}
+
 function show(result)
 {
     for(let elem of result.elements[1].elements)
     {
         for(let subelem of elem.elements)
         {
-          console.log(subelem);
             if (subelem.name == 'name')
                 console.log(subelem);
             else if (subelem.name == 'message') {
                 console.log(subelem.elements);
+                console.log(subelem.elements[0].elements[0].text);
                 console.log(subelem.elements[1]);
             }
         }
