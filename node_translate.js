@@ -17,13 +17,8 @@ var xml = require('fs').readFileSync('GeoMehanika_ru.ts', 'utf8');
 var tsJsObj = convert.xml2js(xml);
 console.log(tsJsObj);
 
-// let transObj = new Promise((res,rej)=> {
-//   await transObj(tsJsObj);
-//   res(tsJsObj);
-// });
-//show(tsJsObj);
-transObj(tsJsObj, (transObj)=>{
-  let xmlNew = convert.js2xml(tsJsObj);
+transObj(tsJsObj, (newObj)=>{
+  let xmlNew = convert.js2xml(newObj);
   fs.writeFileSync('GeoNew_ru.ts', xmlNew);
 });
 
@@ -40,10 +35,6 @@ async function rusTranslate(sentence) {
 	console.log(trResult.text);
       }
     });
-    // setTimeout(()=> {
-    //   console.log('timeout 2 second')
-    //   res('add_translate');
-    // }, 2);
   }));
   return result;
 }
