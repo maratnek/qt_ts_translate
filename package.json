@@ -16,6 +16,7 @@
   "license": "MIT",
   "devDependencies": {
     "xml-js": "^1.6.8",
+    "xmldom": "^0.1.27",
     "yandex-translate": "^2.1.1"
   }
 }
