@@ -1,64 +1,101 @@
 console.log('Property translate js');
-
 console.log('Find all labels');
 
-let convert = require('xml-js');
+let option = {
+    path_xml: 'ru',
+    path_out: 'ru/trans',
+    tag_attrib: [
+        { tag: 'PropertyGroup', attrib: 'label' },
+        { tag: 'SourceProxy', attrib: 'label' },
+        { tag: 'ContextViewProxy', attrib: 'label' },
+        { tag: 'ComparativeViewProxy', attrib: 'label' },
+        { tag: 'OrthographicSliceViewProxy', attrib: 'label' },
+        { tag: 'PlotMatrixViewProxy', attrib: 'label' },
+        { tag: 'MultiSliceViewProxy', attrib: 'label' },
+        { tag: 'ViewProxy', attrib: 'label' },
+        
+    ],
+    dictionary_file: 'dictionary_prop.json'
+};
+
+// find all xml files
+// create phrase map use labels
+// create from phrase map to dictionary_file (for the accumulate)
+// get new phrase map with translation
+// create path out 
+// create new translate xml files with use translation phrase map
+
 let fs = require('fs');
 let DOMParser = require('xmldom').DOMParser;
-let XMLSerializer = require('xmldom').XMLSerializer;
-
-//let xml = fs.readFileSync('ru/views_and_representations.xml');
-//let json = convert.xml2json(xml);
-//console.log(json);
-
-//let map = new Map();
-//let doc = new DOMParser().parseFromString(xml, 'text/xml');
+var xmlserializer = require('xmlserializer');
 
 let parser = new DOMParser();
-//let doc = parser.parseFromString(xml.toString(), "application/xml");
 
-function DocPutAllLabel() { }
-
-function findLabels(fileNameFull, map) {
-    //let map = new Map();
-    console.log('Size: ', map.size);
-    console.log(fileNameFull);
+function getXMLDoc(fileNameFull) {
     let xmlData = fs.readFileSync(fileNameFull);
-    let doc = parser.parseFromString(xmlData.toString(), "application/xml");
-    let label = doc.getElementsByTagName('PropertyGroup');
-    let j = 0;
-    for (let elem in label) {
-        if (label[elem].hasAttribute) {
-            map.set(label[elem].getAttribute('label'), '');
-            //console.log(++j, label[elem].getAttribute('label'));
-        }
-    }
-    //return map;
+    return parser.parseFromString(xmlData.toString(), "application/xml");
 }
 
-function replaceLabels(fileNameFull, map, newPath) {
-    //let map = new Map();
-    console.log('Replace -- map Size: ', map.size);
-    console.log(fileNameFull, newPath);
-    let xmlData = fs.readFileSync(fileNameFull);
-    let doc = parser.parseFromString(xmlData.toString(), "application/xml");
-    let label = doc.getElementsByTagName('PropertyGroup');
+function addNewContext(doc, map, tag, label) {
+    let tagDoc = doc.getElementsByTagName(tag);
+    for (let elem in tagDoc) {
+        if (tagDoc[elem].hasAttribute) {
+            //console.log(tag, label, tagDoc[elem].getAttribute(label));
+            map.set(tagDoc[elem].getAttribute(label), '');
+        }
+    }
+}
+
+function everyContext(fileNameFull, map, option) {
+    console.log('File name: ', fileNameFull);
+    let doc = getXMLDoc(fileNameFull);
+    for (let attr of option.tag_attrib) {
+        addNewContext(doc, map, attr.tag, attr.attrib);
+    }
+}
+
+function replaceContext(doc, map, tag, label) {
+    let tagDoc = doc.getElementsByTagName(tag);
     let j = 0;
-    for (let elem in label) {
-        if (label[elem].hasAttribute) {
-            let name = label[elem].getAttribute('label');
+    for (let elem in tagDoc) {
+        if (tagDoc[elem].hasAttribute) {
+            let name = tagDoc[elem].getAttribute(label);
             if (name) {
-                console.log('label',name);
                 name = map.get(name);
-                console.log('label',name);
+                //console.log(name);
                 if (name)
-                    label[elem].setAttribute('label', name);
+                    tagDoc[elem].setAttribute(label, name);
             }
         }
     }
-    let data = XMLSerializer.serializeToString(doc);
-    console.log(data);
-    fs.writeFileSync(newPath, data);
+    return doc;
+}
+
+function replaceEveryContext(fileNameFull, map, newPath, option) {
+    console.log('File name: ', fileNameFull, newPath);
+    let doc = getXMLDoc(fileNameFull);
+    for (let attr of option.tag_attrib) {
+        replaceContext(doc, map, attr.tag, attr.attrib);
+    }
+    let data = xmlserializer.serializeToString(doc);
+    fs.writeFile(newPath, data, (err) => {
+        console.log(err);
+    });
+}
+
+
+function findLabels(fileNameFull, map) {
+    let doc = getXMLDoc(fileNameFull);
+    addNewContext(doc, map, 'PropertyGroup', 'label');
+}
+
+function replaceLabels(fileNameFull, map, newPath) {
+    let doc = getXMLDoc(fileNameFull);
+    replaceContext(doc, map, newPath, 'PropertyGroup', 'label');
+    let data = xmlserializer.serializeToString(doc);
+    fs.writeFile(newPath, data, (err) => {
+        console.log(err);
+    });
 }
 
 
@@ -78,33 +115,28 @@ fs.exists(path, (exists) => {
                     for (let i = 0; i < files.length; i++) {
                         let file = files[i];
                         file = 'ru/' + file;
-                        findLabels(file, LabelMap);
-                        //count += LabelMap.size;
-
+                        //findLabels(file, LabelMap);
+                        everyContext(file, LabelMap, option);
                         if (i + 1 == files.length)
                             res(count);
                     }
 
                 }).then((count) => {
                     let i = 0;
-                    //for (var key of LabelMap.keys()) {
-                    //    console.log(++i, key);
-                    //}
                     console.log(count);
                     console.log(LabelMap.size);
                     const Dictionary = require('./create_dictonary');
                     let dict = new Dictionary();
                     dict.addNewValues(LabelMap);
                     //console.log(dict.getMap());
+                    LabelMap = dict.getMap();
                     for (let i = 0; i < files.length; i++) {
                         let file = files[i];
                         file = 'ru/' + file;
                         let new_file = 'trans/' + file;
-                        replaceLabels(file, LabelMap, new_file);
-                        //count += LabelMap.size;
-
-                        //if (i + 1 == files.length)
-                        //    res(count);
+                        //replaceLabels(file, LabelMap, new_file);
+                        replaceEveryContext(file, LabelMap, new_file, option);
+                        console.log('replace');
                     }
 
                 })

@@ -17,6 +17,7 @@
   "devDependencies": {
     "xml-js": "^1.6.8",
     "xmldom": "^0.1.27",
+    "xmlserializer": "^0.6.1",
     "yandex-translate": "^2.1.1"
   }
 }
